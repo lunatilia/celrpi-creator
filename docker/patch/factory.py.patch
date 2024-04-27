@@ -1,0 +1,11 @@
+--- a/factory.py
++++ b/factory.py
+@@ -146,4 +146,8 @@
+             from pyanaconda.modules.storage.bootloader.efi import ArmEFIGRUB
+             return ArmEFIGRUB
+ 
++        if platform_class is platform.Aarch64RPI:
++            from pyanaconda.modules.storage.bootloader.rpi import Aarch64RPI
++            return Aarch64RPI
++
+         return None

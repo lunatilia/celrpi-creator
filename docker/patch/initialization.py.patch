@@ -1,0 +1,12 @@
+--- a/initialization.py
++++ b/initialization.py
+@@ -79,6 +79,9 @@
+ def _set_default_label_type():
+     """Set up the default label type."""
+     if not conf.storage.gpt:
++        disklabel_class = get_device_format_class("disklabel")
++        disklabel_types = disklabel_class.get_platform_label_types()
++        disklabel_class.set_default_label_type("msdos")
+         return
+
+     disklabel_class = get_device_format_class("disklabel")

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+print_usage() {
+    cat << EOF
+Usage:
+  $0 [option]
+Options:
+  -h, --help            Show help
+  -c, --config FILE     Specify kickstart file
+  -n, --name NAME       Specify appliance name
+EOF
+    exit 0
+}
+
+run_livemedia_creator() {
+    local config=$1
+    local name=$2
+
+    livemedia-creator \
+        --ks "${config}" \
+        --no-virt \
+        --image-only \
+        --keep-image \
+        --make-disk \
+        --logfile="${logdir}/${logfile}" \
+        --tmp="${temp}" \
+        --resultdir "${result}" \
+        --image-name="${imgfile}"
+
+    if [ $? -ne 0 ]; then
+        echo "livemedia-creator is failed"
+        systemctl poweroff
+    fi
+
+    if [ -f ${result}/${imgfile} ]; then
+        finimgfile=${name}-`date +%Y%m%d%H%M%S`.raw.img
+        mv "${result}/${imgfile}" "${release}/${finimgfile}"
+    fi
+}
+
+process_options() {
+    OPTS=$(getopt -o hc:n: --long help,config:,name: -n "$0" -- "$@")
+    if [ $? != 0 ]; then
+        echo "Terminating..." >&2
+        systemctl poweroff
+    fi
+
+    eval set -- "$OPTS"
+
+    while true; do
+        case "$1" in
+            -h | --help )
+                print_usage
+                ;;
+            -c | --config )
+                config="$2"; shift 2
+                ;;
+            -n | --name )
+                name="$2"; shift 2
+                ;;
+            -- )
+                shift
+                break
+                ;;
+            * )
+                echo "Internal error!"
+                systemctl poweroff
+                ;;
+        esac
+    done
+}
+
+config=""
+name=""
+logdir="./log"
+logfile="output.log"
+temp="/tmp"
+result="./result"
+release="/release"
+imgfile="sysimage.raw.img"
+
+process_options "$@"
+
+if [ -z "${config}" ]; then
+    echo "Kickstart file is not specified. Please specify it using -c or --config."
+    systemctl poweroff
+fi
+
+if [ -z "${name}" ]; then
+    echo "Appliance name is not specified. Please specify it using -n or --name."
+    systemctl poweroff
+fi
+
+run_livemedia_creator "${config}" "${name}"
+
+systemctl poweroff
